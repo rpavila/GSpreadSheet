@@ -14,15 +14,21 @@ namespace GSpreadSheet
 
     public class GoogleSheets
     {
-        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
-        static string ApplicationName = "GSpreadSheet Shared Library";
+        private string credentialsPath;
+        private string[] Scopes = { SheetsService.Scope.Spreadsheets };
+        private string ApplicationName = "GSpreadSheet Shared Library";
+
+        public GoogleSheets(string credentialsPath)
+        {
+            this.credentialsPath = credentialsPath;
+        }
 
         public Session OpenSession(string docID)
         {
             UserCredential credential;
 
             using (var stream =
-                new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+                new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
             {
                 string credPath = "token.json";
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
@@ -31,7 +37,6 @@ namespace GSpreadSheet
                     "user",
                     CancellationToken.None,
                     new FileDataStore(credPath, true)).Result;
-                Console.WriteLine("Credential file saved to: " + credPath);
             }
             
             SheetsService service = new SheetsService(new BaseClientService.Initializer()
@@ -51,7 +56,7 @@ namespace GSpreadSheet
             session.Close();
         }
 
-        public void WriteCellValues(Session doc, List<CellAddressWithValue> Values)
+        public void WriteCellValues(Session doc, List<object> Values)
         {
             if (doc.IsClosed())
             {
@@ -78,7 +83,7 @@ namespace GSpreadSheet
             Console.WriteLine(JsonConvert.SerializeObject(response));
         }
 
-        public IList<CellAddressWithValue> ReadCellValues(Session doc, List<CellAddress> Values)
+        public IList<Object> ReadCellValues(Session doc, List<object> Values)
         {
             if (doc.IsClosed())
             {
@@ -101,7 +106,7 @@ namespace GSpreadSheet
             BatchGetValuesResponse response = request.Execute();
             Console.WriteLine(JsonConvert.SerializeObject(response));
             
-            IList<CellAddressWithValue> result = new List<CellAddressWithValue>();
+            IList<object> result = new List<object>();
             IList<ValueRange> valueRanges = response.ValueRanges;
             if (valueRanges != null && valueRanges.Count > 0)
             {

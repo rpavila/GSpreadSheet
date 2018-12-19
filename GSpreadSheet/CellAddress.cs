@@ -4,7 +4,7 @@ using System.Text;
 
 namespace GSpreadSheet
 {
-    public class CellAddress
+    public class CellAddress : Object
     {
         public String SheetName;
         public String Address;
