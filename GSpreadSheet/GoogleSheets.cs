@@ -69,8 +69,11 @@ namespace GSpreadSheet
                 IList<object> updateValues = new List<object>();
                 updateValues.Add(cell.Value);
 
-                ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
-                data.Add(vr);
+                if (!cell.Address.Contains(":"))
+                {
+                    ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
+                    data.Add(vr);
+                }
             }
             
             BatchUpdateValuesRequest requestBody = new BatchUpdateValuesRequest();
@@ -93,7 +96,10 @@ namespace GSpreadSheet
             List<string> ranges = new List<string>();
             foreach (CellAddress cell in Values)
             {
-                ranges.Add(cell.NotationA1());
+                if (!cell.Address.Contains(":"))
+                {
+                    ranges.Add(cell.NotationA1());
+                }
             }
 
             SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)0;  // TODO: Update placeholder value.
@@ -104,7 +110,6 @@ namespace GSpreadSheet
             request.DateTimeRenderOption = dateTimeRenderOption;
 
             BatchGetValuesResponse response = request.Execute();
-            Console.WriteLine(JsonConvert.SerializeObject(response));
             
             IList<object> result = new List<object>();
             IList<ValueRange> valueRanges = response.ValueRanges;
