@@ -69,11 +69,12 @@ namespace GSpreadSheet
                 IList<object> updateValues = new List<object>();
                 updateValues.Add(cell.Value);
 
-                if (!cell.Address.Contains(":"))
+                if (cell.Address.Contains(":"))
                 {
-                    ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
-                    data.Add(vr);
+                    throw new Exception("The cell address has a invalid format");
                 }
+                ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
+                data.Add(vr);
             }
             
             BatchUpdateValuesRequest requestBody = new BatchUpdateValuesRequest();
@@ -95,10 +96,11 @@ namespace GSpreadSheet
             List<string> ranges = new List<string>();
             foreach (CellAddress cell in Values)
             {
-                if (!cell.Address.Contains(":"))
+                if (cell.Address.Contains(":"))
                 {
-                    ranges.Add(cell.NotationA1());
+                    throw new Exception("The cell address has a invalid format");
                 }
+                ranges.Add(cell.NotationA1());
             }
 
             SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)0;  // TODO: Update placeholder value.
