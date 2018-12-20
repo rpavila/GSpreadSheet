@@ -83,7 +83,6 @@ namespace GSpreadSheet
             SpreadsheetsResource.ValuesResource.BatchUpdateRequest request = doc.Service.Spreadsheets.Values.BatchUpdate(requestBody, doc.DocID);
             
             BatchUpdateValuesResponse response = request.Execute();
-            Console.WriteLine(JsonConvert.SerializeObject(response));
         }
 
         public IList<Object> ReadCellValues(Session doc, List<object> Values)
