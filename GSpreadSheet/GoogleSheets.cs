@@ -7,11 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Newtonsoft.Json;
+using Google.Apis.Auth.OAuth2.Flows;
 
 namespace GSpreadSheet
 {
-
     public class GoogleSheets
     {
         private string credentialsPath;
@@ -27,6 +26,18 @@ namespace GSpreadSheet
         {
             UserCredential credential;
 
+            //using (var stream =
+            //    new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
+            //{
+            //    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new GoogleAuthorizationCodeFlow.Initializer
+            //    {
+            //        ClientSecrets = GoogleClientSecrets.Load(stream).Secrets
+            //    },
+            //    Scopes,
+            //    "user",
+            //    CancellationToken.None,
+            //    new FileDataStore("GoogleSheets.Credentials")).Result;
+            //}
             using (var stream =
                 new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
             {
@@ -56,14 +67,18 @@ namespace GSpreadSheet
             session.Close();
         }
 
-        public void WriteCellValues(Session doc, List<object> Values)
+        public ExecutionResult WriteCellValues(Session doc, List<object> Values)
         {
+            ExecutionResult result = new ExecutionResult();
             if (doc.IsClosed())
             {
-                throw new Exception("The session is closed");
+                result.Result = ResultTypes.Error;
+                result.Messages = new string[] { "The session is closed" };
+                return result;
             }
 
             List<ValueRange> data = new List<ValueRange>();
+            string errors = "";
             foreach (CellAddressWithValue cell in Values)
             {
                 IList<object> updateValues = new List<object>();
@@ -71,36 +86,70 @@ namespace GSpreadSheet
 
                 if (cell.Address.Contains(":"))
                 {
-                    throw new Exception("The cell address has a invalid format");
+                    if (errors.Length > 0)
+                    {
+                        errors += ";";
+                    }
+                    errors += "The cell address [" + cell.Address + "] has a invalid format";
                 }
-                ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
-                data.Add(vr);
+                else
+                {
+                    ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
+                    data.Add(vr);
+                }
             }
-            
+            if (errors.Length > 0)
+            {
+                result.Result = ResultTypes.Error;
+                result.Messages = errors.Split(';');
+                return result;
+            }
+
             BatchUpdateValuesRequest requestBody = new BatchUpdateValuesRequest();
             requestBody.Data = data;
             requestBody.ValueInputOption = "RAW";
 
             SpreadsheetsResource.ValuesResource.BatchUpdateRequest request = doc.Service.Spreadsheets.Values.BatchUpdate(requestBody, doc.DocID);
-            
+
             BatchUpdateValuesResponse response = request.Execute();
+
+            result.Result = ResultTypes.Success;
+            result.Messages = new string[] { "Operation successfully!!!" };
+            return result;
         }
 
-        public IList<Object> ReadCellValues(Session doc, List<object> Values)
+        public ExecutionResultWithData<IList<object>> ReadCellValues(Session doc, List<object> Values)
         {
+            ExecutionResultWithData<IList<object>> result = new ExecutionResultWithData<IList<object>>();
             if (doc.IsClosed())
             {
-                throw new Exception("The session is closed");
+                result.Result = ResultTypes.Error;
+                result.Messages = new string[] { "The session is closed" };
+                return result;
             }
 
             List<string> ranges = new List<string>();
+            string errors = "";
             foreach (CellAddress cell in Values)
             {
                 if (cell.Address.Contains(":"))
                 {
-                    throw new Exception("The cell address has a invalid format");
+                    if (errors.Length > 0)
+                    {
+                        errors += ";";
+                    }
+                    errors += "The cell address [" + cell.Address + "] has a invalid format";
                 }
-                ranges.Add(cell.NotationA1());
+                else
+                {
+                    ranges.Add(cell.NotationA1());
+                }
+            }
+            if (errors.Length > 0)
+            {
+                result.Result = ResultTypes.Error;
+                result.Messages = errors.Split(';');
+                return result;
             }
 
             SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)0;  // TODO: Update placeholder value.
@@ -111,8 +160,8 @@ namespace GSpreadSheet
             request.DateTimeRenderOption = dateTimeRenderOption;
 
             BatchGetValuesResponse response = request.Execute();
-            
-            IList<object> result = new List<object>();
+
+            IList<object> data = new List<object>();
             IList<ValueRange> valueRanges = response.ValueRanges;
             if (valueRanges != null && valueRanges.Count > 0)
             {
@@ -141,11 +190,13 @@ namespace GSpreadSheet
                                 SheetName = sheetName,
                                 Value = col
                             };
-                            result.Add(cav);
+                            data.Add(cav);
                         }
                     }
                 }
             }
+            result.Result = ResultTypes.Success;
+            result.Data = data;
             return result;
         }
     }

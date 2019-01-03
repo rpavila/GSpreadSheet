@@ -4,10 +4,18 @@ using System.Text;
 
 namespace GSpreadSheet
 {
-    public class CellAddress : Object
+    public class CellAddress
     {
-        public String SheetName;
-        public String Address;
+        public CellAddress()
+        { }
+
+        public CellAddress(string sheetName, string address)
+        {
+            SheetName = sheetName;
+            Address = address;
+        }
+        public string SheetName;
+        public string Address;
 
         public string NotationA1()
         {
@@ -17,6 +25,13 @@ namespace GSpreadSheet
 
     public class CellAddressWithValue : CellAddress
     {
-        public Object Value;
+        public CellAddressWithValue() : base()
+        { }
+
+        public CellAddressWithValue(string sheetName, string address, object value) : base(sheetName, address)
+        {
+            Value = value;
+        }
+        public object Value;
     }
 }
