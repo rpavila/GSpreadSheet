@@ -3,11 +3,9 @@ using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Google.Apis.Auth.OAuth2.Flows;
 
 namespace GSpreadSheet
 {
@@ -41,7 +39,7 @@ namespace GSpreadSheet
             using (var stream =
                 new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
             {
-                string credPath = "token.json";
+                var credPath = "token.json";
                 credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
                     GoogleClientSecrets.Load(stream).Secrets,
                     Scopes,
@@ -50,13 +48,13 @@ namespace GSpreadSheet
                     new FileDataStore(credPath, true)).Result;
             }
             
-            SheetsService service = new SheetsService(new BaseClientService.Initializer()
+            var service = new SheetsService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
                 ApplicationName = ApplicationName,
             });
 
-            Session session = new Session();
+            var session = new Session();
             session.Service = service;
             session.DocID = docID;
             return session;
@@ -67,19 +65,19 @@ namespace GSpreadSheet
             session.Close();
         }
 
-        public ExecutionResult WriteCellValues(Session doc, List<object> Values)
+        public ExecutionResult WriteCellValues(Session doc, List<CellAddressWithValue> Values)
         {
-            ExecutionResult result = new ExecutionResult();
+            var result = new ExecutionResult();
             if (doc.IsClosed())
             {
                 result.Result = ResultTypes.Error;
-                result.Messages = new string[] { "The session is closed" };
+                result.Messages = new[] { "The session is closed" };
                 return result;
             }
 
-            List<ValueRange> data = new List<ValueRange>();
-            string errors = "";
-            foreach (CellAddressWithValue cell in Values)
+            var data = new List<ValueRange>();
+            var errors = "";
+            foreach (var cell in Values)
             {
                 IList<object> updateValues = new List<object>();
                 updateValues.Add(cell.Value);
@@ -94,7 +92,7 @@ namespace GSpreadSheet
                 }
                 else
                 {
-                    ValueRange vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
+                    var vr = new ValueRange { Range = cell.NotationA1(), Values = new List<IList<object>> { updateValues } };
                     data.Add(vr);
                 }
             }
@@ -105,32 +103,32 @@ namespace GSpreadSheet
                 return result;
             }
 
-            BatchUpdateValuesRequest requestBody = new BatchUpdateValuesRequest();
+            var requestBody = new BatchUpdateValuesRequest();
             requestBody.Data = data;
             requestBody.ValueInputOption = "RAW";
 
-            SpreadsheetsResource.ValuesResource.BatchUpdateRequest request = doc.Service.Spreadsheets.Values.BatchUpdate(requestBody, doc.DocID);
+            var request = doc.Service.Spreadsheets.Values.BatchUpdate(requestBody, doc.DocID);
 
-            BatchUpdateValuesResponse response = request.Execute();
+            var response = request.Execute();
 
             result.Result = ResultTypes.Success;
-            result.Messages = new string[] { "Operation successfully!!!" };
+            result.Messages = new[] { "Operation successfully!!!" };
             return result;
         }
 
-        public ExecutionResultWithData<IList<object>> ReadCellValues(Session doc, List<object> Values)
+        public ExecutionResultWithData<IList<CellAddressWithValue>> ReadCellValues(Session doc, List<CellAddress> Values)
         {
-            ExecutionResultWithData<IList<object>> result = new ExecutionResultWithData<IList<object>>();
+            var result = new ExecutionResultWithData<IList<CellAddressWithValue>>();
             if (doc.IsClosed())
             {
                 result.Result = ResultTypes.Error;
-                result.Messages = new string[] { "The session is closed" };
+                result.Messages = new[] { "The session is closed" };
                 return result;
             }
 
-            List<string> ranges = new List<string>();
-            string errors = "";
-            foreach (CellAddress cell in Values)
+            var ranges = new List<string>();
+            var errors = "";
+            foreach (var cell in Values)
             {
                 if (cell.Address.Contains(":"))
                 {
@@ -152,23 +150,23 @@ namespace GSpreadSheet
                 return result;
             }
 
-            SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)0;  // TODO: Update placeholder value.
-            SpreadsheetsResource.ValuesResource.BatchGetRequest.DateTimeRenderOptionEnum dateTimeRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.DateTimeRenderOptionEnum)0;  // TODO: Update placeholder value
-            SpreadsheetsResource.ValuesResource.BatchGetRequest request = doc.Service.Spreadsheets.Values.BatchGet(doc.DocID);
+            var valueRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.ValueRenderOptionEnum)0;  // TODO: Update placeholder value.
+            var dateTimeRenderOption = (SpreadsheetsResource.ValuesResource.BatchGetRequest.DateTimeRenderOptionEnum)0;  // TODO: Update placeholder value
+            var request = doc.Service.Spreadsheets.Values.BatchGet(doc.DocID);
             request.Ranges = ranges;
             request.ValueRenderOption = valueRenderOption;
             request.DateTimeRenderOption = dateTimeRenderOption;
 
-            BatchGetValuesResponse response = request.Execute();
+            var response = request.Execute();
 
-            IList<object> data = new List<object>();
-            IList<ValueRange> valueRanges = response.ValueRanges;
+            var data = new List<CellAddressWithValue>();
+            var valueRanges = response.ValueRanges;
             if (valueRanges != null && valueRanges.Count > 0)
             {
                 foreach (var range in valueRanges)
                 {
                     string sheetName = null, address = null;
-                    string[] rangeSplit = range.Range.Split('!');
+                    var rangeSplit = range.Range.Split('!');
                     switch (rangeSplit.Length)
                     {
                         case 1:
@@ -184,7 +182,7 @@ namespace GSpreadSheet
                     {
                         foreach (var col in row)
                         {
-                            CellAddressWithValue cav = new CellAddressWithValue
+                            var cav = new CellAddressWithValue
                             {
                                 Address = address,
                                 SheetName = sheetName,
