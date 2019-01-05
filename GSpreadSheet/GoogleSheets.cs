@@ -193,6 +193,7 @@ namespace GSpreadSheet
                 }
 
                 result.Result = ResultTypes.Success;
+                result.Messages = new string[] { "Operation successfully!!!" };
                 result.Data = data;
             }
             catch (Exception e)
