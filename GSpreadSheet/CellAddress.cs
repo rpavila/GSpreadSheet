@@ -1,13 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace GSpreadSheet
+﻿namespace GSpreadSheet
 {
     public class CellAddress
     {
         public CellAddress()
         { }
+
+        public CellAddress(string address)
+        {
+            Address = address;
+        }
 
         public CellAddress(string sheetName, string address)
         {
@@ -19,7 +20,7 @@ namespace GSpreadSheet
 
         public string NotationA1()
         {
-            return this.SheetName != null ? (this.SheetName + "!" + this.Address) : this.Address;
+            return SheetName != null ? (SheetName + "!" + Address) : Address;
         }
     }
 
@@ -28,6 +29,10 @@ namespace GSpreadSheet
         public CellAddressWithValue() : base()
         { }
 
+        public CellAddressWithValue(string address, object value) : base(address)
+        {
+            Value = value;
+        }
         public CellAddressWithValue(string sheetName, string address, object value) : base(sheetName, address)
         {
             Value = value;
