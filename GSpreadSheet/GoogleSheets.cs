@@ -3,11 +3,10 @@ using Google.Apis.Sheets.v4;
 using Google.Apis.Sheets.v4.Data;
 using Google.Apis.Services;
 using Google.Apis.Util.Store;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
-using Google.Apis.Auth.OAuth2.Flows;
+using System;
 
 namespace GSpreadSheet
 {
@@ -25,19 +24,6 @@ namespace GSpreadSheet
         public Session OpenSession(string docID)
         {
             UserCredential credential;
-
-            //using (var stream =
-            //    new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
-            //{
-            //    credential = GoogleWebAuthorizationBroker.AuthorizeAsync(new GoogleAuthorizationCodeFlow.Initializer
-            //    {
-            //        ClientSecrets = GoogleClientSecrets.Load(stream).Secrets
-            //    },
-            //    Scopes,
-            //    "user",
-            //    CancellationToken.None,
-            //    new FileDataStore("GoogleSheets.Credentials")).Result;
-            //}
             using (var stream =
                 new FileStream(this.credentialsPath, FileMode.Open, FileAccess.Read))
             {
@@ -67,7 +53,7 @@ namespace GSpreadSheet
             session.Close();
         }
 
-        public ExecutionResult WriteCellValues(Session doc, List<object> Values)
+        public ExecutionResult WriteCellValues(Session doc, List<CellAddressWithValue> Values)
         {
             ExecutionResult result = new ExecutionResult();
             if (doc.IsClosed())
@@ -111,16 +97,24 @@ namespace GSpreadSheet
 
             SpreadsheetsResource.ValuesResource.BatchUpdateRequest request = doc.Service.Spreadsheets.Values.BatchUpdate(requestBody, doc.DocID);
 
-            BatchUpdateValuesResponse response = request.Execute();
+            try
+            {
+                BatchUpdateValuesResponse response = request.Execute();
 
-            result.Result = ResultTypes.Success;
-            result.Messages = new string[] { "Operation successfully!!!" };
+                result.Result = ResultTypes.Success;
+                result.Messages = new string[] { "Operation successfully!!!" };
+            }
+            catch (Exception e)
+            {
+                result.Result = ResultTypes.Error;
+                result.Messages = new string[] { e.Message };
+            }
             return result;
         }
 
-        public ExecutionResultWithData<IList<object>> ReadCellValues(Session doc, List<object> Values)
+        public ExecutionResultWithData<IList<CellAddressWithValue>> ReadCellValues(Session doc, List<CellAddress> Values)
         {
-            ExecutionResultWithData<IList<object>> result = new ExecutionResultWithData<IList<object>>();
+            ExecutionResultWithData<IList<CellAddressWithValue>> result = new ExecutionResultWithData<IList<CellAddressWithValue>>();
             if (doc.IsClosed())
             {
                 result.Result = ResultTypes.Error;
@@ -158,45 +152,54 @@ namespace GSpreadSheet
             request.Ranges = ranges;
             request.ValueRenderOption = valueRenderOption;
             request.DateTimeRenderOption = dateTimeRenderOption;
-
-            BatchGetValuesResponse response = request.Execute();
-
-            IList<object> data = new List<object>();
-            IList<ValueRange> valueRanges = response.ValueRanges;
-            if (valueRanges != null && valueRanges.Count > 0)
+            
+            try
             {
-                foreach (var range in valueRanges)
+                BatchGetValuesResponse response = request.Execute();
+
+                IList<CellAddressWithValue> data = new List<CellAddressWithValue>();
+                IList<ValueRange> valueRanges = response.ValueRanges;
+                if (valueRanges != null && valueRanges.Count > 0)
                 {
-                    string sheetName = null, address = null;
-                    string[] rangeSplit = range.Range.Split('!');
-                    switch (rangeSplit.Length)
+                    foreach (var range in valueRanges)
                     {
-                        case 1:
-                            address = rangeSplit[0];
-                            break;
-                        case 2:
-                            sheetName = rangeSplit[0];
-                            address = rangeSplit[1];
-                            break;
-                    }
-                    var values = range.Values;
-                    foreach (var row in values)
-                    {
-                        foreach (var col in row)
+                        string sheetName = null, address = null;
+                        string[] rangeSplit = range.Range.Split('!');
+                        switch (rangeSplit.Length)
                         {
-                            CellAddressWithValue cav = new CellAddressWithValue
+                            case 1:
+                                address = rangeSplit[0];
+                                break;
+                            case 2:
+                                sheetName = rangeSplit[0];
+                                address = rangeSplit[1];
+                                break;
+                        }
+                        var values = range.Values;
+                        foreach (var row in values)
+                        {
+                            foreach (var col in row)
                             {
-                                Address = address,
-                                SheetName = sheetName,
-                                Value = col
-                            };
-                            data.Add(cav);
+                                CellAddressWithValue cav = new CellAddressWithValue
+                                {
+                                    Address = address,
+                                    SheetName = sheetName,
+                                    Value = col
+                                };
+                                data.Add(cav);
+                            }
                         }
                     }
                 }
+
+                result.Result = ResultTypes.Success;
+                result.Data = data;
             }
-            result.Result = ResultTypes.Success;
-            result.Data = data;
+            catch (Exception e)
+            {
+                result.Result = ResultTypes.Error;
+                result.Messages = new string[] { e.Message };
+            }
             return result;
         }
     }
